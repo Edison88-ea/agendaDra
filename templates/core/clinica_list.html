@@ -1,0 +1,63 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Clínicas Cadastradas{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Clínicas Cadastradas</h2>
+    <a href="{% url 'nova_clinica' %}" class="btn btn-success">Nova Clínica</a>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="q" class="form-control" placeholder="Buscar por nome da clínica..." value="{{ request.GET.q }}">
+        <button class="btn btn-outline-primary" type="submit">Buscar</button>
+    </div>
+</form>
+
+{% if clinicas %}
+    <ul class="list-group">
+        {% for clinica in clinicas %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <h5>{{ clinica.nome }}</h5>
+                    <p class="mb-1">Endereço: {{ clinica.endereco }}</p>
+                    <p class="mb-0">Telefone: {{ clinica.telefone|default_if_none:"N/A" }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'editar_clinica' clinica.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+
+    {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}">&laquo; Primeira</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">Anterior</a></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Próxima</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}">Última &raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+
+{% else %}
+    <div class="alert alert-info" role="alert">
+        Nenhuma clínica encontrada.
+    </div>
+{% endif %}
+{% endblock %}

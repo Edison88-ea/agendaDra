@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{% if form.instance.pk %}Editar Consulta{% else %}Nova Consulta{% endif %}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>{% if form.instance.pk %}Editar Consulta{% else %}Nova Consulta{% endif %}</h2>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data"> {# Adicionar enctype para upload de arquivos #}
+            {% csrf_token %}
+            {{ form.as_p }} {# Isto agora incluirá o campo arquivo_exame #}
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="{% url 'agenda' %}" class="btn btn-secondary">Cancelar</a>
+            {% if form.instance.pk %}
+                <a href="{% url 'excluir_consulta' form.instance.pk %}" class="btn btn-danger float-end">Excluir</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

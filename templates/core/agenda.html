@@ -1,0 +1,236 @@
+{% extends 'core/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Agenda de Consultas{% endblock %}
+
+{% block extra_head %}
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css' rel='stylesheet' />
+    <style>
+        /* Estilos gerais para o calendário */
+        #calendar {
+            max-width: 1100px;
+            margin: 0 auto;
+            font-family: 'Inter', Arial, Helvetica Neue, Helvetica, sans-serif; /* Usando Inter como sugerido */
+            font-size: 14px;
+            border-radius: 0.5rem; /* Bordas arredondadas para o calendário */
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); /* Sombra suave */
+            background-color: #fff;
+        }
+        .fc-event {
+            cursor: pointer; /* Indica que o evento é clicável */
+            border-radius: 0.3rem; /* Bordas arredondadas para os eventos */
+            padding: 5px 8px; /* AUMENTADO: Espaçamento interno para eventos */
+            font-size: 0.9em; /* AUMENTADO: Tamanho da fonte dos eventos */
+            font-weight: bold; /* Texto mais forte para eventos */
+            border: 1px solid rgba(0, 0, 0, 0.1); /* Borda sutil para eventos */
+            margin-bottom: 3px; /* AUMENTADO: Pequena margem entre eventos */
+            white-space: normal; /* Permite que o texto quebre linha */
+            overflow: hidden; /* Esconde o conteúdo que transborda */
+            text-overflow: ellipsis; /* Adiciona reticências se o texto for muito longo */
+        }
+
+        .fc-event-agendado { /* Cor para eventos pendentes (ou 'Agendado') */
+            background-color: #E0509B !important; /* Rosa escuro (você tinha fc-event-pink-darker) */
+            color: #fff !important;
+            border-color: #E0509B !important;
+        }
+        .fc-event-confirmado { /* Cor para eventos confirmados */
+            background-color: #198754 !important; /* Verde */
+            color: #fff !important;
+            border-color: #198754 !important;
+        }
+        .fc-event-atendido { /* Nova cor para eventos atendidos */
+            background-color: #add8e6 !important; /* Azul claro */
+            color: #000 !important; /* Texto escuro para melhor contraste com azul claro */
+            border-color: #add8e6 !important;
+        }
+        .fc-event-cancelado { /* Nova cor para eventos cancelados/não compareceu */
+            background-color: #dc3545 !important; /* Vermelho */
+            color: #fff !important;
+            border-color: #dc3545 !important;
+        }
+
+        /* Estilo para o cabeçalho do FullCalendar */
+        .fc .fc-toolbar-title {
+            font-size: 1.5em; /* Título do mês/semana maior */
+            color: #343a40; /* Cor do texto mais escura */
+        }
+
+        /* Estilo para o cabeçalho do FullCalendar */
+        .fc .fc-toolbar-title {
+            font-size: 1.5em; /* Título do mês/semana maior */
+            color: #343a40; /* Cor do texto mais escura */
+        }
+        .fc .fc-header-toolbar {
+            background-color: #f8f9fa;
+        }
+        .fc .fc-button {
+            background-color: #FF69B4; /* Cor dos botões do cabeçalho */
+            border-color: #FF69B4;
+            color: #fff;
+            border-radius: 0.3rem;
+            padding: 0.4em 0.8em;
+            font-weight: 600;
+        }
+        .fc .fc-button:hover {
+            background-color: #E0509B; /* Cor dos botões ao passar o mouse */
+            border-color: #E0509B;
+        }
+        .fc .fc-button-primary:not(:disabled).fc-button-active {
+            background-color: #E0509B; /* Cor do botão ativo (Mês/Semana/Dia) */
+            border-color: #E0509B;
+        }
+
+        /* Estilo para os dias da semana (dom, seg, ter...) */
+        .fc-col-header-cell {
+            background-color: #f8f9fa; /* Fundo leve para os dias da semana */
+            color: #495057; /* Cor do texto */
+            font-weight: bold;
+        }
+
+        /* Estilo para as células dos dias */
+        .fc-daygrid-day {
+            border-radius: 0.25rem; /* Pequeno arredondamento nas células dos dias */
+        }
+        .fc-daygrid-day-number {
+            font-size: 1.1em; /* Tamanho do número do dia */
+            font-weight: 600;
+            padding: 5px;
+        }
+
+        /* Ajustes para visualizações de tempo (semana, dia) */
+        .fc-timegrid-event {
+            padding: 5px; /* Mais padding para eventos na visualização de tempo */
+            min-height: 30px; /* Adicionado: Altura mínima para eventos na visualização de tempo */
+        }
+        .fc-timegrid-event .fc-event-time {
+            font-size: 0.8em; /* Tamanho da fonte do horário */
+            font-weight: normal;
+            display: block; /* Garante que o horário ocupe sua própria linha */
+        }
+        .fc-timegrid-event .fc-event-title {
+            font-size: 0.9em; /* Tamanho da fonte do título */
+            white-space: normal; /* Permite que o título quebre linha */
+            line-height: 1.2; /* Ajusta a altura da linha para o título */
+        }
+        .fc-timegrid-slot-label {
+            font-size: 0.9em; /* Tamanho da fonte dos rótulos de hora */
+        }
+        .card-body {
+           background-color: #f8f9fa;
+
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Agenda de Consultas</h2>
+    <a href="{% url 'agendar_consulta' %}" class="btn btn-success">Agendar Nova Consulta</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div id='calendar'></div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core/locales/pt-br.global.min.js'></script> {# Tradução para Português #}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth', // Mantendo 'dayGridMonth' como inicial
+                locale: 'pt-br',
+                slotDuration: '00:30:00', // Duração dos slots de tempo (ex: 30 minutos)
+                slotLabelFormat: {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    omitZeroMinute: false,
+                    meridiem: false // Formato 24h
+                },
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                slotMinTime: '08:00:00',
+                slotMaxTime: '18:00:00',
+                events: {
+                    url: '{% url "api_consultas_json" %}',
+                    failure: function() {
+                        alert('Houve um erro ao carregar os eventos!');
+                    }
+                }, // URL para buscar os eventos (consultas)
+                eventClick: function(info) {
+                    // Ao clicar em um evento, redireciona para a página de edição
+                    if (info.event.url) {
+                        window.location.href = info.event.url;
+                        info.jsEvent.preventDefault(); 
+                    }
+                },
+                dateClick: function(info) {
+                    // Ao clicar em um espaço vazio do calendário, redireciona para a página de agendamento
+                    var clickedDateTime = info.dateStr;
+                    var url = "{% url 'agendar_consulta' %}";
+                    window.location.href = url;
+                },
+                eventDidMount: function(info) {
+                    // Adiciona o tooltip ao elemento do evento
+                    var procedimento = info.event.extendedProps.procedimento || 'Não especificado';
+                    var pacienteNome = info.event.extendedProps.paciente_nome;
+                    var clinicaNome = info.event.extendedProps.clinica_nome;
+                    var statusConsulta = info.event.extendedProps.status;
+                    var valor = info.event.extendedProps.valor;
+                    var statusPagamento = info.event.extendedProps.pago;
+                    var arquivoNome = info.event.extendedProps.arquivo_exame_nome;
+                    var arquivoUrl = info.event.extendedProps.arquivo_exame_url;
+
+                    var tooltipText = `Procedimento: ${procedimento}\nValor: ${valor}\nPago: ${statusPagamento}\nPaciente: ${pacienteNome}\nClínica: ${clinicaNome}\nStatus: ${statusConsulta}`;
+                    var tooltipText = `Paciente: ${pacienteNome}\nClínica: ${clinicaNome}\nProcedimento: ${procedimento}\nValor: ${valor}\nPago: ${statusPagamento}\nStatus: ${status}`;
+                
+                    if (arquivoNome !== 'Nenhum arquivo') {
+                        tooltipText += `\nExame: ${arquivoNome}`; // Simplesmente mostra o nome do arquivo no tooltip
+                    }
+
+
+                    // Usando Bootstrap 5 Tooltips (Vanilla JS)
+                    info.el.setAttribute('data-bs-toggle', 'tooltip');
+                    info.el.setAttribute('title', tooltipText);
+
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                        new bootstrap.Tooltip(info.el);
+                    } else {
+                        console.warn("Bootstrap Tooltip não está disponível. Verifique se o Bootstrap JS está carregado corretamente no base.html.");
+                    }
+
+                    info.el.classList.remove('fc-event-pink-darker', 'fc-event-green-confirmed', 'fc-event-atendido', 'fc-event-cancelado');
+
+                    // Adiciona classes para estilização de eventos com base no status de confirmação
+                     if (statusConsulta === 'Atendido') {
+                        info.el.classList.add('fc-event-atendido');
+                    } else if (statusConsulta === 'Cancelado' || statusConsulta === 'Não Compareceu') {
+                        info.el.classList.add('fc-event-cancelado');
+                    } else if (statusConsulta === 'Confirmado') {
+                        info.el.classList.add('fc-event-confirmado');
+                    } else if (statusConsulta === 'Agendado') { 
+                        info.el.classList.add('fc-event-agendado'); 
+                    }
+                },
+                // Para garantir que os eventos sejam renderizados corretamente em português
+                buttonText: {
+                    today: 'Hoje',
+                    month: 'Mês',
+                    week: 'Semana',
+                    day: 'Dia'
+                }
+            });
+            calendar.render();
+        });
+    </script>
+{% endblock %}
