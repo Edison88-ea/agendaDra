@@ -8,9 +8,9 @@
         <h2>{% if form.instance.pk %}Editar Paciente{% else %}Novo Paciente{% endif %}</h2>
     </div>
     <div class="card-body">
-        <form method="post">
+        <form method="post" enctype="multipart/form-data"> {# Adicionar este atributo #}
             {% csrf_token %}
-            {{ form.as_p }} {# Este renderiza todos os campos definidos no fields da view #}
+            {{ form.as_p }}
             <button type="submit" class="btn btn-primary">Salvar</button>
             <a href="{% url 'paciente_list' %}" class="btn btn-secondary">Cancelar</a>
         </form>
