@@ -1,0 +1,23 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Confirmar Exclusão de Arquivo{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h2>Confirmar Exclusão de Arquivo</h2>
+        </div>
+        <div class="card-body">
+            <p>Tem certeza de que deseja excluir o arquivo <strong>"{{ object.arquivo.name|cut:"consultas_exames/"|cut:"consultas_termos/" }}"</strong>?</p>
+            <p class="text-danger">Esta ação é irreversível.</p>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+                <a href="{% url 'editar_consulta' object.consulta.pk %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

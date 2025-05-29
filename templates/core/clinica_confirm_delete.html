@@ -1,0 +1,23 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Excluir Clínica{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h2>Excluir Clínica</h2>
+        </div>
+        <div class="card-body">
+            <p>Tem certeza de que deseja excluir a clínica <strong>{{ object.nome }}</strong>?</p>
+            <p class="text-danger">Esta ação é irreversível e também pode afetar pacientes e consultas associadas a esta clínica (se houver).</p>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+                <a href="{% url 'clinica_list' %}" class="btn btn-secondary">Cancelar</a> {# Redireciona para a lista de clínicas #}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

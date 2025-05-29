@@ -1,0 +1,23 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Excluir arquivo{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h2>Excluir arquivo</h2>
+        </div>
+        <div class="card-body">
+            <p>Tem certeza de que deseja excluir o arquivo <strong>{{ object.nome }}</strong>?</p>
+            <p class="text-danger">Esta ação é irreversível.</p>
+
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+                <a href="{% url 'editar_paciente' object.paciente.pk %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+# Arquivos de ambiente virtual
+.venv/
+env/
+venv/
+ENV/
+bin/
+include/
+lib/
+lib64/
+local/share/virtualenv/
+
+# Arquivos de banco de dados (SQLite local)
+*.sqlite3
+*.db
+*.db-journal
+
+# Arquivos de mídia (uploads de usuários)
+/media/
+
+# Arquivos estáticos coletados (gerados pelo collectstatic)
+/staticfiles/
+
+# Chaves secretas e configurações de ambiente (JAMAS enviar!)
+.env             # Arquivo .env (se você o usa para variáveis de ambiente locais)
+local_settings.py # Se você tem um arquivo de settings local separado
+
+# Python
+*.pyc
+__pycache__/
+*.pot
+*.mo
+*.log
+pip-log.txt
+pip-delete-this-arg.txt
+*.pyo
+
+# IDEs e Ferramentas
+.vscode/        # VS Code
+.idea/          # PyCharm/IntelliJ
+*.swp           # Vim swap files
+*~              # Temporary files
