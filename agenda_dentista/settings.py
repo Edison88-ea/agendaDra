@@ -17,17 +17,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
-
 if not SECRET_KEY:
-    # Detecta se está em um ambiente de hospedagem comum (PythonAnywhere, Google App Engine)
+   
     if os.environ.get('GAE_APPLICATION') or os.environ.get('PYTHONANYWHERE_DOMAIN'):
         raise Exception('SECRET_KEY must be set in production environment variables!')
     else:
-        # Valor de fallback para desenvolvimento local (APENAS PARA DESENVOLVIMENTO, NUNCA EM PROD!)
-        SECRET_KEY = '_zhm+iw-psshyakjos-@t8)=63ow#qjxk&67x*dxv2=h!*vsy0' # <-- Troque este texto para uma CHAVE GERADA
+       
+        SECRET_KEY = 'django-insecure-sua-chave-secreta-de-desenvolvimento-aqui-troque-por-uma-real-no-env' 
         print("AVISO: Usando SECRET_KEY de desenvolvimento. Defina DJANGO_SECRET_KEY em variáveis de ambiente para produção.")
 
 
@@ -37,13 +35,14 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
 # SEGURANÇA CRÍTICA: ALLOWED_HOSTS
 
-ALLOWED_HOSTS = [] 
+ALLOWED_HOSTS = [] # Sempre começa vazia
 
 if DEBUG:
-    ALLOWED_HOSTS.append('127.0.0.1')
-    ALLOWED_HOSTS.append('localhost')
-    ALLOWED_HOSTS.append('testserver') 
    
+    ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
+   
+else:
+    
     pythonanywhere_domain = os.environ.get('PYTHONANYWHERE_DOMAIN')
     if pythonanywhere_domain:
         ALLOWED_HOSTS.append(pythonanywhere_domain)
@@ -51,11 +50,8 @@ if DEBUG:
     if 'Edison88.pythonanywhere.com' not in ALLOWED_HOSTS: 
         ALLOWED_HOSTS.append('Edison88.pythonanywhere.com')
 
-
-
-    # Se ALLOWED_HOSTS ainda estiver vazio em produção, lance um erro.
     if not ALLOWED_HOSTS:
-        raise Exception('ALLOWED_HOSTS must be set in production (e.g., in PythonAnywhere Web tab environment variables) or in settings file!')
+        raise Exception('ALLOWED_HOSTS must be set in production (e.g., in PythonAnywhere Web tab environment variables) or explicitly in settings.py!')
 
 
 # Application definition
@@ -117,14 +113,13 @@ DATABASES = {
 # Configuração para Produção (irá substituir a do SQLite quando DEBUG=False)
 if not DEBUG:
     
-    DB_ENGINE = os.environ.get('DB_ENGINE', 'django.db.backends.mysql') 
+    DB_ENGINE = os.environ.get('DB_ENGINE', 'django.db.backends.mysql') #
     DB_NAME = os.environ.get('DB_NAME')
     DB_USER = os.environ.get('DB_USER')
     DB_PASSWORD = os.environ.get('DB_PASSWORD')
     DB_HOST = os.environ.get('DB_HOST') 
     DB_PORT = os.environ.get('DB_PORT', '') 
-
-    if all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST]): # Verifica se todas as credenciais básicas estão definidas
+    if all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST]): 
         DATABASES['default'] = {
             'ENGINE': DB_ENGINE,
             'NAME': DB_NAME,
@@ -134,7 +129,6 @@ if not DEBUG:
             'PORT': DB_PORT,
         }
     else:
-    
         raise Exception("Credenciais de banco de dados de produção (DB_NAME, DB_USER, DB_PASSWORD, DB_HOST) não definidas em variáveis de ambiente!")
 
 
@@ -160,7 +154,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'pt-br' # Definido pt-br como você queria
+LANGUAGE_CODE = 'pt-br' 
 
 TIME_ZONE = 'America/Sao_Paulo'
 
