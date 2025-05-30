@@ -2,14 +2,30 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.utils import timezone
-from datetime import datetime, timedelta, date, time # Adicione 'time' aqui
-from .models import Paciente, Clinica, Consulta, Dentista
-from .forms import ConsultaForm
+from datetime import datetime, timedelta, date
+from .models import Paciente, Clinica, Consulta, TermoPacienteArquivo, ExamePacienteArquivo, ExameConsultaArquivo, TermoConsultaArquivo
+from .forms import ConsultaForm, PacienteForm
 from django.http import JsonResponse
-from django.conf import settings # Adicione esta importação
-import os # Adicione esta importação
-from django.db.models import Sum # Importe Sum para agregação
-from django.db.models import Q # Importe Q
+from django.conf import settings
+from django.db.models import Sum, Q
+from django.forms import inlineformset_factory
+
+# FormSets para Paciente
+TermoPacienteArquivoFormSet = inlineformset_factory(
+    Paciente,
+    TermoPacienteArquivo,
+    fields=['arquivo', 'descricao'],
+    extra=1,
+    can_delete=True
+)
+
+ExamePacienteArquivoFormSet = inlineformset_factory(
+    Paciente,
+    ExamePacienteArquivo,
+    fields=['arquivo', 'descricao'],
+    extra=1,
+    can_delete=True
+)
 
 class AgendaView(ListView):
     model = Consulta
@@ -92,7 +108,6 @@ class AgendarConsultaCreateView(CreateView):
         if hora_inicio_param:
             try:
                 initial_data['hora_inicio'] = datetime.strptime(hora_inicio_param, '%H:%M').time()
-                # Sugerir hora_fim 30 minutos depois
                 initial_data['hora_fim'] = (datetime.strptime(hora_inicio_param, '%H:%M') + timedelta(minutes=30)).time()
             except ValueError:
                 pass
@@ -102,16 +117,100 @@ class AgendarConsultaCreateView(CreateView):
             
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['submitted_exames_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('exames_upload')] if self.request.POST else []
+        context['submitted_termos_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('termos_upload')] if self.request.POST else []
+        return context
+
+    def form_valid(self, form):
+        self.object = form.save() 
+        
+        exames_files = self.request.FILES.getlist('exames_upload')
+        for f in exames_files:
+            ExameConsultaArquivo.objects.create(consulta=self.object, arquivo=f)
+            
+        termos_files = self.request.FILES.getlist('termos_upload')
+        for f in termos_files:
+            TermoConsultaArquivo.objects.create(consulta=self.object, arquivo=f)
+            
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        context = self.get_context_data(form=form) # Já chama get_context_data que passa os submitted_files
+        return self.render_to_response(context)
+
+
 class ConsultaUpdateView(UpdateView):
     model = Consulta
     form_class = ConsultaForm
     template_name = 'core/agendar_consulta_form.html'
     success_url = reverse_lazy('agenda')
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['submitted_exames_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('exames_upload')] if self.request.POST else []
+        context['submitted_termos_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('termos_upload')] if self.request.POST else []
+        return context
+
+    def form_valid(self, form):
+        self.object = form.save()
+
+        exames_files = self.request.FILES.getlist('exames_upload')
+        for f in exames_files:
+            ExameConsultaArquivo.objects.create(consulta=self.object, arquivo=f)
+
+        termos_files = self.request.FILES.getlist('termos_upload')
+        for f in termos_files:
+            TermoConsultaArquivo.objects.create(consulta=self.object, arquivo=f)
+
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        context = self.get_context_data(form=form) # Já chama get_context_data que passa os submitted_files
+        return self.render_to_response(context)
+
 class ConsultaDeleteView(DeleteView):
     model = Consulta
     template_name = 'core/consulta_confirm_delete.html'
     success_url = reverse_lazy('agenda')
+
+class PacienteDeleteView(DeleteView):
+    model = Paciente
+    template_name = 'core/paciente_confirm_delete.html'
+    success_url = reverse_lazy('paciente_list')
+
+class ExcluirExameConsultaArquivoView(DeleteView):
+    model = ExameConsultaArquivo
+    template_name = 'core/confirm_delete_arquivo.html'
+    
+    def get_success_url(self):
+        return reverse_lazy('editar_consulta', kwargs={'pk': self.object.consulta.pk})
+
+class ExcluirTermoConsultaArquivoView(DeleteView):
+    model = TermoConsultaArquivo
+    template_name = 'core/confirm_delete_arquivo.html'
+    
+    def get_success_url(self):
+        return reverse_lazy('editar_consulta', kwargs={'pk': self.object.consulta.pk})
+
+class ExcluirExamePacienteArquivoView(DeleteView):
+    model = ExamePacienteArquivo
+    template_name = 'core/paciente_delete_arquivo.html'
+    
+    def get_success_url(self):
+        return reverse_lazy('editar_paciente', kwargs={'pk': self.object.paciente.pk})
+
+class ExcluirTermoPacienteArquivoView(DeleteView):
+    model = TermoPacienteArquivo
+    template_name = 'core/paciente_delete_arquivo.html'
+    
+    def get_success_url(self):
+        return reverse_lazy('editar_paciente', kwargs={'pk': self.object.paciente.pk})
 
 class PacienteListView(ListView):
     model = Paciente
@@ -131,19 +230,79 @@ class PacienteListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['query'] = self.request.GET.get('q', '')
+        context['submitted_exames_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('exames_upload_paciente')] if self.request.POST else []
+        context['submitted_termos_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('termos_upload_paciente')] if self.request.POST else []
         return context
 
 class PacienteCreateView(CreateView):
     model = Paciente
-    fields = ['nome', 'telefone', 'email', 'data_nascimento', 'cpf', 'arquivo_exame_paciente', 'termo_paciente']
+    form_class = PacienteForm
     template_name = 'core/paciente_form.html'
     success_url = reverse_lazy('paciente_list')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.POST:
+            context['submitted_exames_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('exames_upload_paciente')]
+            context['submitted_termos_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('termos_upload_paciente')]
+        else:
+            context['submitted_exames_paciente_files'] = []
+            context['submitted_termos_paciente_files'] = []
+        return context
+
+    def form_valid(self, form):
+        self.object = form.save()
+        
+        exames_files = self.request.FILES.getlist('exames_upload_paciente')
+        for f in exames_files:
+            ExamePacienteArquivo.objects.create(paciente=self.object, arquivo=f)
+            
+        termos_files = self.request.FILES.getlist('termos_upload_paciente')
+        for f in termos_files:
+            TermoPacienteArquivo.objects.create(paciente=self.object, arquivo=f)
+            
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        context = self.get_context_data(form=form)
+        context['submitted_exames_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('exames_upload_paciente')]
+        context['submitted_termos_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('termos_upload_paciente')]
+        return self.render_to_response(context)
+
 class PacienteUpdateView(UpdateView):
     model = Paciente
-    fields = ['nome', 'telefone', 'email', 'data_nascimento', 'cpf', 'arquivo_exame_paciente', 'termo_paciente']
+    form_class = PacienteForm # Usar o novo PacienteForm
     template_name = 'core/paciente_form.html'
     success_url = reverse_lazy('paciente_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.POST:
+            context['submitted_exames_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('exames_upload_paciente')]
+            context['submitted_termos_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('termos_upload_paciente')]
+        else:
+            context['submitted_exames_paciente_files'] = []
+            context['submitted_termos_paciente_files'] = []
+        return context
+
+    def form_valid(self, form):
+        self.object = form.save()
+        
+        exames_files = self.request.FILES.getlist('exames_upload_paciente')
+        for f in exames_files:
+            ExamePacienteArquivo.objects.create(paciente=self.object, arquivo=f)
+            
+        termos_files = self.request.FILES.getlist('termos_upload_paciente')
+        for f in termos_files:
+            TermoPacienteArquivo.objects.create(paciente=self.object, arquivo=f)
+            
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        context = self.get_context_data(form=form)
+        context['submitted_exames_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('exames_upload_paciente')]
+        context['submitted_termos_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('termos_upload_paciente')]
+        return self.render_to_response(context)
 
 class ClinicaListView(ListView):
     model = Clinica
@@ -174,13 +333,16 @@ class ClinicaUpdateView(UpdateView):
     fields = ['nome', 'endereco', 'telefone']
     template_name = 'core/clinica_form.html'
     success_url = reverse_lazy('clinica_list')
+class ClinicaDeleteView(DeleteView):
+    model = Clinica
+    template_name = 'core/clinica_confirm_delete.html'
+    success_url = reverse_lazy('clinica_list')    
 
 def relatorio_financeiro(request):
     data_inicio_str = request.GET.get('data_inicio')
     data_fim_str = request.GET.get('data_fim')
     clinica_id = request.GET.get('clinica')
 
-    # Queryset base para todas as consultas pagas no período
     consultas_pagas_periodo = Consulta.objects.filter(pago=True)
 
     if data_inicio_str:
@@ -196,20 +358,15 @@ def relatorio_financeiro(request):
         except ValueError:
             pass
     
-    # Calcular o total geral arrecadado (antes de filtrar por clínica específica)
     total_geral_arrecadado = consultas_pagas_periodo.aggregate(total=Sum('valor'))['total'] or 0.00
 
-    # Dicionário para armazenar relatórios por clínica
     relatorios_por_clinica = {}
     
-    # Obter todas as clínicas para o filtro e para agrupar
     todas_clinicas = Clinica.objects.all().order_by('nome')
 
-    # Se uma clínica específica foi selecionada, filtraremos apenas por ela
     if clinica_id:
         consultas_pagas_periodo = consultas_pagas_periodo.filter(clinica_id=clinica_id)
         
-        # Para garantir que o relatório por clínica seja apenas para a selecionada
         clinica_selecionada_obj = todas_clinicas.filter(pk=clinica_id).first()
         if clinica_selecionada_obj:
             consultas_da_clinica = consultas_pagas_periodo.filter(clinica=clinica_selecionada_obj).order_by('-data_consulta', '-hora_inicio')
@@ -220,7 +377,7 @@ def relatorio_financeiro(request):
                     'consultas': consultas_da_clinica,
                     'total_arrecadado': total_arrecadado_clinica,
                 }
-    else: # Se nenhuma clínica específica foi selecionada, mostra todas
+    else:
         for clinica in todas_clinicas:
             consultas_da_clinica = consultas_pagas_periodo.filter(clinica=clinica).order_by('-data_consulta', '-hora_inicio')
             total_arrecadado_clinica = consultas_da_clinica.aggregate(total=Sum('valor'))['total'] or 0.00
@@ -238,7 +395,7 @@ def relatorio_financeiro(request):
         'data_inicio': data_inicio_str,
         'data_fim': data_fim_str,
         'clinica_selecionada_id': int(clinica_id) if clinica_id else '',
-        'total_geral_arrecadado': total_geral_arrecadado, # Novo: Total geral
+        'total_geral_arrecadado': total_geral_arrecadado,
     }
     return render(request, 'core/relatorio_financeiro.html', context)
 
@@ -263,30 +420,26 @@ def get_consultas_json(request):
                 start_date = start_date_obj
                 end_date = end_date_obj
             
-            # Abordagem de filtro no Python (para depuração e clareza):
             consultas_filtradas_em_memoria = []
             for consulta in consultas_qs:
                 consulta_start_dt = timezone.make_aware(datetime.combine(consulta.data_consulta, consulta.hora_inicio))
                 consulta_end_dt = timezone.make_aware(datetime.combine(consulta.data_consulta, consulta.hora_fim))
 
-                # Verifica se o evento da consulta intercepta o período [start_date, end_date)
                 if consulta_start_dt < end_date and consulta_end_dt > start_date:
                     consultas_filtradas_em_memoria.append(consulta)
             
-            consultas_qs = consultas_filtradas_em_memoria # Usa a lista filtrada
+            consultas_qs = consultas_filtradas_em_memoria
 
             print(f"Datas de filtro (aware): start={start_date}, end={end_date}")
-            # print(f"Query SQL gerada: {str(consultas_qs.query)}") # Não funciona mais com lista filtrada em memória
 
         except ValueError as e:
             print(f"ERRO ao converter datas do FullCalendar: {e}")
             pass
 
     events = []
-    for consulta in consultas_qs: # Itera sobre a lista filtrada
+    for consulta in consultas_qs:
         event_id = str(consulta.pk)
         
-        # Obtém o nome do paciente e da clínica de forma segura
         paciente_nome_display = consulta.paciente.nome if consulta.paciente else 'Horário Reservado'
         clinica_nome_display = consulta.clinica.nome if consulta.clinica else 'N/A'
 
@@ -316,8 +469,8 @@ def get_consultas_json(request):
             'end': end_datetime.isoformat(),
             'url': reverse_lazy('editar_consulta', kwargs={'pk': consulta.pk}),
             'extendedProps': {
-                'paciente_nome': paciente_nome_display, # Usar a variável segura
-                'clinica_nome': clinica_nome_display,   # Usar a variável segura
+                'paciente_nome': paciente_nome_display,
+                'clinica_nome': clinica_nome_display,
                 'status': consulta.get_status_display(),
                 'procedimento': consulta.procedimento or 'Não especificado',
                 'valor': f"R$ {consulta.valor:.2f}" if consulta.valor is not None else 'N/A',

@@ -1,11 +1,35 @@
 from django.contrib import admin
-from .models import Paciente, Clinica, Dentista, Consulta
+from .models import Paciente, Clinica, Consulta, Dentista, TermoPacienteArquivo, ExamePacienteArquivo, ExameConsultaArquivo, TermoConsultaArquivo # Importar novos modelos
+
+# Inline para Exames do Paciente
+class ExamePacienteArquivoInline(admin.TabularInline):
+    model = ExamePacienteArquivo
+    extra = 1
+    fields = ['arquivo', 'descricao']
+
+# Inline para Termos do Paciente
+class TermoPacienteArquivoInline(admin.TabularInline):
+    model = TermoPacienteArquivo
+    extra = 1
+    fields = ['arquivo', 'descricao']
+
+# NOVOS Inlines para Consulta
+class ExameConsultaArquivoInline(admin.TabularInline):
+    model = ExameConsultaArquivo
+    extra = 1
+    fields = ['arquivo', 'descricao']
+
+class TermoConsultaArquivoInline(admin.TabularInline):
+    model = TermoConsultaArquivo
+    extra = 1
+    fields = ['arquivo', 'descricao']
 
 @admin.register(Paciente)
 class PacienteAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'telefone', 'email', 'cpf')
-    search_fields = ('nome', 'cpf', 'exames')
-    fields = ('nome', 'telefone', 'email', 'data_nascimento', 'cpf', 'exames', 'arquivo_exame_paciente', 'termo_paciente')
+    list_display = ('nome', 'telefone', 'email', 'cpf', 'clinica_principal')
+    search_fields = ('nome', 'cpf', 'email', 'clinica_principal__nome')
+    fields = ('nome', 'telefone', 'email', 'data_nascimento', 'cpf', 'clinica_principal') 
+    inlines = [ExamePacienteArquivoInline, TermoPacienteArquivoInline]
 
 @admin.register(Clinica)
 class ClinicaAdmin(admin.ModelAdmin):
@@ -19,19 +43,11 @@ class DentistaAdmin(admin.ModelAdmin):
 
 @admin.register(Consulta)
 class ConsultaAdmin(admin.ModelAdmin):
-    # Alterado 'data_hora' para 'data_consulta' e 'hora_inicio'
     list_display = ('paciente', 'clinica', 'data_consulta', 'hora_inicio', 'hora_fim', 'status', 'pago', 'valor')
-    # Alterado 'data_hora' para 'data_consulta'
     list_filter = ('clinica', 'data_consulta', 'status', 'pago')
     search_fields = ('paciente__nome', 'procedimento')
-    # Alterado 'data_hora' para 'data_consulta'
-    date_hierarchy = 'data_consulta' # Usar data_consulta para hierarquia de data
-    
-    # Campos que podem ser editados diretamente na lista do admin
+    date_hierarchy = 'data_consulta'
     list_editable = ('status', 'pago') 
-
-    # Campos exibidos no formulário de edição/criação
-    fields = ('paciente', 'dentista', 'clinica', 'data_consulta', 'hora_inicio', 'hora_fim', 'procedimento', 'valor', 'pago', 'status', 'observacoes', 'arquivo_exame')
-
-
-
+    # Removido 'arquivo_exame' dos fields
+    fields = ('paciente', 'dentista', 'clinica', 'data_consulta', 'hora_inicio', 'hora_fim', 'procedimento', 'valor', 'pago', 'status', 'observacoes')
+    inlines = [ExameConsultaArquivoInline, TermoConsultaArquivoInline] # Adiciona ambos os inlines da consulta

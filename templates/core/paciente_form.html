@@ -1,6 +1,44 @@
 {% extends 'core/base.html' %}
+{% load crispy_forms_tags %} {# Adicione esta linha #}
 
 {% block title %}{% if form.instance.pk %}Editar Paciente{% else %}Novo Paciente{% endif %}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .list-group-item p a,
+    .list-group-item a { 
+        word-break: break-all; 
+        overflow-wrap: break-word; 
+    }
+    /* Estilo para que o conteúdo do item da lista se ajuste */
+    .list-group-item > div:first-child {
+        flex-grow: 1; 
+        min-width: 0; 
+    }
+    /* Estilos para miniaturas de arquivos */
+    .file-preview-thumbnail {
+        max-width: 50px; 
+        max-height: 50px;
+        border: 1px solid #ddd;
+        padding: 2px;
+        border-radius: 4px;
+        margin-right: 10px;
+        object-fit: contain; /
+    }
+    .file-preview-embed {
+        width: 100%;
+        height: 300px; 
+        border: 1px solid #ddd;
+        margin-top: 10px;
+    }
+    .file-item-content {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap; 
+        gap: 5px; 
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="card">
@@ -8,12 +46,137 @@
         <h2>{% if form.instance.pk %}Editar Paciente{% else %}Novo Paciente{% endif %}</h2>
     </div>
     <div class="card-body">
-        <form method="post" enctype="multipart/form-data"> {# Adicionar este atributo #}
+        <form method="post" enctype="multipart/form-data"> {# Mantenha enctype para uploads de arquivo #}
             {% csrf_token %}
-            {{ form.as_p }}
+            
+            {# Renderiza os campos do formulário principal do Paciente com estilo Crispy Forms #}
+            {{ form|crispy }}
+
+            {# Exibir arquivos existentes (apenas se for edição de paciente) #}
+            {% if form.instance.pk %}
+                {% if form.instance.exames_arquivos.all %}
+                    <div class="mb-3">
+                        <h6>Exames Carregados:</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for exame in form.instance.exames_arquivos.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="file-item-content">
+                                        {% if exame.arquivo.url|slice:"-4:" == ".pdf" or exame.arquivo.url|slice:"-4:" == ".PDF" %}
+                                            <a href="{{ exame.arquivo.url }}" target="_blank">
+                                                <img src="https://via.placeholder.com/50x50.png?text=PDF" alt="PDF icon" class="file-preview-thumbnail">
+                                            </a>
+                                        {% elif exame.arquivo.url|slice:"-4:" == ".jpg" or exame.arquivo.url|slice:"-5:" == ".jpeg" or exame.arquivo.url|slice:"-4:" == ".png" or exame.arquivo.url|slice:"-4:" == ".gif" %}
+                                            <a href="{{ exame.arquivo.url }}" target="_blank">
+                                                <img src="{{ exame.arquivo.url }}" alt="{{ exame.descricao|default:exame.arquivo.name }}" class="file-preview-thumbnail">
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ exame.arquivo.url }}" target="_blank">
+                                                <img src="https://via.placeholder.com/50x50.png?text=DOC" alt="Document icon" class="file-preview-thumbnail">
+                                            </a>
+                                        {% endif %}
+                                        <a href="{{ exame.arquivo.url }}" target="_blank">{{ exame.descricao|default:exame.arquivo.name|cut:"pacientes_exames/" }}</a>
+                                    </div>
+                                    <a href="{% url 'excluir_exame_paciente_arquivo' exame.pk %}" class="btn btn-sm btn-outline-danger ms-auto">Remover</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                {% if form.instance.termos_arquivos.all %}
+                    <div class="mb-3">
+                        <h6>Termos Carregados:</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for termo in form.instance.termos_arquivos.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="file-item-content">
+                                        {% if termo.arquivo.url|slice:"-4:" == ".pdf" or termo.arquivo.url|slice:"-4:" == ".PDF" %}
+                                            <a href="{{ termo.arquivo.url }}" target="_blank">
+                                                <img src="https://via.placeholder.com/50x50.png?text=PDF" alt="PDF icon" class="file-preview-thumbnail">
+                                            </a>
+                                        {% elif termo.arquivo.url|slice:"-4:" == ".jpg" or termo.arquivo.url|slice:"-5:" == ".jpeg" or termo.arquivo.url|slice:"-4:" == ".png" or termo.arquivo.url|slice:"-4:" == ".gif" %}
+                                            <a href="{{ termo.arquivo.url }}" target="_blank">
+                                                <img src="{{ termo.arquivo.url }}" alt="{{ termo.descricao|default:termo.arquivo.name }}" class="file-preview-thumbnail">
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ termo.arquivo.url }}" target="_blank">
+                                                <img src="https://via.placeholder.com/50x50.png?text=DOC" alt="Document icon" class="file-preview-thumbnail">
+                                            </a>
+                                        {% endif %}
+                                        <a href="{{ termo.arquivo.url }}" target="_blank">{{ termo.descricao|default:termo.arquivo.name|cut:"termos_pacientes/" }}</a>
+                                    </div>
+                                    <a href="{% url 'excluir_termo_paciente_arquivo' termo.pk %}" class="btn btn-sm btn-outline-danger ms-auto">Remover</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            {% endif %}
+
             <button type="submit" class="btn btn-primary">Salvar</button>
             <a href="{% url 'paciente_list' %}" class="btn btn-secondary">Cancelar</a>
+            {% if form.instance.pk %}
+                <a href="{% url 'excluir_paciente' form.instance.pk %}" class="btn btn-danger float-end">Excluir</a>
+            {% endif %}
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="application/json" id="submitted_exames_paciente_files_json">
+    {{ submitted_exames_paciente_files|safe }}
+</script>
+<script type="application/json" id="submitted_termos_paciente_files_json">
+    {{ submitted_termos_paciente_files|safe }}
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Função para atualizar a lista de arquivos selecionados
+        function updateFileList(inputElement, outputDivId, filesArray) {
+            const outputDiv = document.getElementById(outputDivId);
+            outputDiv.innerHTML = '';
+            const filesToDisplay = filesArray || Array.from(inputElement.files);
+
+            if (filesToDisplay.length > 0) {
+                const ul = document.createElement('ul');
+                ul.classList.add('list-unstyled', 'mb-0');
+                filesToDisplay.forEach(file => {
+                    const li = document.createElement('li');
+                    const fileName = file.name || (file.arquivo && file.arquivo.name ? file.arquivo.name.split('/').pop() : 'N/A');
+                    const fileSize = file.size || (file.arquivo && file.arquivo.size ? file.arquivo.size : 0);
+                    li.textContent = `• ${fileName} (${(fileSize / 1024).toFixed(2)} KB)`;
+                    ul.appendChild(li);
+                });
+                outputDiv.appendChild(ul);
+            } else {
+                outputDiv.textContent = 'Nenhum arquivo escolhido.';
+            }
+        }
+
+        // Adiciona event listeners aos campos de upload
+        const examesUploadPacienteInput = document.getElementById('id_exames_upload_paciente');
+        const termosUploadPacienteInput = document.getElementById('id_termos_upload_paciente');
+
+        if (examesUploadPacienteInput) {
+            examesUploadPacienteInput.addEventListener('change', function() {
+                updateFileList(this, 'exames-upload-list');
+            });
+            const submittedExamesPaciente = JSON.parse(document.getElementById('submitted_exames_paciente_files_json').textContent || '[]');
+            if (submittedExamesPaciente && submittedExamesPaciente.length > 0) {
+                updateFileList(examesUploadPacienteInput, 'exames-upload-list', submittedExamesPaciente);
+            }
+        }
+
+        if (termosUploadPacienteInput) {
+            termosUploadPacienteInput.addEventListener('change', function() {
+                updateFileList(this, 'termos-upload-list');
+            });
+            const submittedTermosPaciente = JSON.parse(document.getElementById('submitted_termos_paciente_files_json').textContent || '[]');
+            if (submittedTermosPaciente && submittedTermosPaciente.length > 0) {
+                updateFileList(termosUploadPacienteInput, 'termos-upload-list', submittedTermosPaciente);
+            }
+        }
+    });
+</script>
 {% endblock %}

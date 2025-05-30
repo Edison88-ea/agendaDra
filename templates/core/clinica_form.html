@@ -1,14 +1,26 @@
 {% extends 'core/base.html' %}
+{% load crispy_forms_tags %} {# Adicione esta linha #}
 
 {% block title %}{% if form.instance.pk %}Editar Clínica{% else %}Nova Clínica{% endif %}{% endblock %}
 
 {% block content %}
-<h2>{% if form.instance.pk %}Editar Clínica{% else %}Nova Clínica{% endif %}</h2>
+<div class="card">
+    <div class="card-header">
+        <h2>{% if form.instance.pk %}Editar Clínica{% else %}Nova Clínica{% endif %}</h2>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            {# Renderiza os campos do formulário principal da Clínica com estilo Crispy Forms #}
+            {{ form|crispy }}
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="btn btn-primary">Salvar</button>
-    <a href="{% url 'clinica_list' %}" class="btn btn-secondary">Cancelar</a>
-</form>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="{% url 'clinica_list' %}" class="btn btn-secondary">Cancelar</a>
+            {% if form.instance.pk %} {# Mostra o botão Excluir apenas se for uma edição #}
+                <a href="{% url 'excluir_clinica' form.instance.pk %}" class="btn btn-danger float-end">Excluir</a> {# Botão de Excluir #}
+            {% endif %}
+        </form>
+    </div>
+</div>
 {% endblock %}

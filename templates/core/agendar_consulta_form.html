@@ -1,16 +1,82 @@
 {% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
 
-{% block title %}{% if form.instance.pk %}Editar Consulta{% else %}Nova Consulta{% endif %}{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar Consulta{% else %}Agendar Nova Consulta{% endif %}{% endblock %}
 
 {% block content %}
 <div class="card">
     <div class="card-header">
-        <h2>{% if form.instance.pk %}Editar Consulta{% else %}Nova Consulta{% endif %}</h2>
+        <h2>{% if form.instance.pk %}Editar Consulta{% else %}Agendar Nova Consulta{% endif %}</h2>
     </div>
     <div class="card-body">
-        <form method="post" enctype="multipart/form-data"> {# Adicionar enctype para upload de arquivos #}
+        <form method="post" enctype="multipart/form-data"> {# Mantenha enctype para uploads de arquivo #}
             {% csrf_token %}
-            {{ form.as_p }} {# Isto agora incluirá o campo arquivo_exame #}
+            
+            {# Renderiza os campos do formulário principal com estilo Crispy Forms #}
+            {{ form|crispy }}
+
+
+            {# Exibir arquivos existentes (apenas se for edição de consulta) #}
+            {% if form.instance.pk %}
+                {% if form.instance.exames_consulta_arquivos.all %}
+                    <div class="mb-3">
+                        <h6>Exames Carregados:</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for exame in form.instance.exames_consulta_arquivos.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="file-item-content">
+                                        {% if exame.arquivo.url|slice:"-4:" == ".pdf" or exame.arquivo.url|slice:"-4:" == ".PDF" %}
+                                            <a href="{{ exame.arquivo.url }}" target="_blank">
+                                                <img src="https://via.placeholder.com/50x50.png?text=PDF" alt="PDF icon" class="file-preview-thumbnail">
+                                            </a>
+                                        {% elif exame.arquivo.url|slice:"-4:" == ".jpg" or exame.arquivo.url|slice:"-5:" == ".jpeg" or exame.arquivo.url|slice:"-4:" == ".png" or exame.arquivo.url|slice:"-4:" == ".gif" %}
+                                            <a href="{{ exame.arquivo.url }}" target="_blank">
+                                                <img src="{{ exame.arquivo.url }}" alt="{{ exame.descricao|default:exame.arquivo.name }}" class="file-preview-thumbnail">
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ exame.arquivo.url }}" target="_blank">
+                                                <img src="https://via.placeholder.com/50x50.png?text=DOC" alt="Document icon" class="file-preview-thumbnail">
+                                            </a>
+                                        {% endif %}
+                                        <a href="{{ exame.arquivo.url }}" target="_blank">{{ exame.descricao|default:exame.arquivo.name|cut:"consultas_exames/" }}</a>
+                                    </div>
+                                    <a href="{% url 'excluir_exame_consulta_arquivo' exame.pk %}" class="btn btn-sm btn-outline-danger ms-auto">Remover</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+                {% if form.instance.termos_consulta_arquivos.all %}
+                    <div class="mb-3">
+                        <h6>Termos Carregados:</h6>
+                        <ul class="list-group list-group-flush">
+                            {% for termo in form.instance.termos_consulta_arquivos.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="file-item-content">
+                                        {% if termo.arquivo.url|slice:"-4:" == ".pdf" or termo.arquivo.url|slice:"-4:" == ".PDF" %}
+                                            <a href="{{ termo.arquivo.url }}" target="_blank">
+                                                <img src="https://via.placeholder.com/50x50.png?text=PDF" alt="PDF icon" class="file-preview-thumbnail">
+                                            </a>
+                                        {% elif termo.arquivo.url|slice:"-4:" == ".jpg" or termo.arquivo.url|slice:"-5:" == ".jpeg" or termo.arquivo.url|slice:"-4:" == ".png" or termo.arquivo.url|slice:"-4:" == ".gif" %}
+                                            <a href="{{ termo.arquivo.url }}" target="_blank">
+                                                <img src="{{ termo.arquivo.url }}" alt="{{ termo.descricao|default:termo.arquivo.name }}" class="file-preview-thumbnail">
+                                            </a>
+                                        {% else %}
+                                            <a href="{{ termo.arquivo.url }}" target="_blank">
+                                                <img src="https://via.placeholder.com/50x50.png?text=DOC" alt="Document icon" class="file-preview-thumbnail">
+                                            </a>
+                                        {% endif %}
+                                        <a href="{{ termo.arquivo.url }}" target="_blank">{{ termo.descricao|default:termo.arquivo.name|cut:"consultas_termos/" }}</a>
+                                    </div>
+                                    <a href="{% url 'excluir_termo_consulta_arquivo' termo.pk %}" class="btn btn-sm btn-outline-danger ms-auto">Remover</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            {% endif %}
+
             <button type="submit" class="btn btn-primary">Salvar</button>
             <a href="{% url 'agenda' %}" class="btn btn-secondary">Cancelar</a>
             {% if form.instance.pk %}
@@ -19,4 +85,62 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="application/json" id="submitted_exames_files_json">
+    {{ submitted_exames_files|safe }}
+</script>
+<script type="application/json" id="submitted_termos_files_json">
+    {{ submitted_termos_files|safe }}
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Função para atualizar a lista de arquivos selecionados
+        function updateFileList(inputElement, outputDivId) {
+            const outputDiv = document.getElementById(outputDivId);
+            outputDiv.innerHTML = '';
+            if (inputElement.files.length > 0) {
+                const ul = document.createElement('ul');
+                ul.classList.add('list-unstyled', 'mb-0');
+                for (let i = 0; i < inputElement.files.length; i++) {
+                    const file = inputElement.files[i];
+                    const li = document.createElement('li');
+                    li.textContent = `• ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                    ul.appendChild(li);
+                }
+                outputDiv.appendChild(ul);
+            } else {
+                outputDiv.textContent = 'Nenhum arquivo escolhido.';
+            }
+        }
+
+        // Adiciona event listeners aos campos de upload
+        const examesUploadInput = document.getElementById('id_exames_upload');
+        const termosUploadInput = document.getElementById('id_termos_upload');
+
+        if (examesUploadInput) {
+            examesUploadInput.addEventListener('change', function() {
+                updateFileList(this, 'exames-upload-list');
+            });
+            // Inicializa a lista com arquivos que foram submetidos e retornados pelo servidor
+            const submittedExames = JSON.parse(document.getElementById('submitted_exames_files_json').textContent || '[]');
+            if (submittedExames && submittedExames.length > 0) {
+                updateFileList(examesUploadInput, 'exames-upload-list', submittedExames);
+            }
+        }
+
+        if (termosUploadInput) {
+            termosUploadInput.addEventListener('change', function() {
+                updateFileList(this, 'termos-upload-list');
+            });
+            // Inicializa a lista com arquivos que foram submetidos e retornados pelo servidor
+            const submittedTermos = JSON.parse(document.getElementById('submitted_termos_files_json').textContent || '[]');
+            if (submittedTermos && submittedTermos.length > 0) {
+                updateFileList(termosUploadInput, 'termos-upload-list', submittedTermos);
+            }
+        }
+    });
+</script>
 {% endblock %}

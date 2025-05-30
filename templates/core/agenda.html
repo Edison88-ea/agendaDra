@@ -19,7 +19,7 @@
             cursor: pointer;
             border-radius: 0.3rem;
             padding: 3px 5px;
-            font-size: 0.9em; /* Ajustado para melhor visualização do texto */
+            font-size: 0.9em;
             font-weight: bold;
             border: 1px solid rgba(0, 0, 0, 0.1);
             margin-bottom: 3px;
@@ -30,24 +30,29 @@
 
         /* Cores dos eventos */
         .fc-event-agendado {
-            background-color: #E0509B !important; /* Rosa escuro */
+            background-color: #E0509B !important; 
             color: #fff !important;
             border-color: #E0509B !important;
         }
         .fc-event-confirmado {
-            background-color: #198754 !important; /* Verde */
+            background-color: #198754 !important; 
             color: #fff !important;
             border-color: #198754 !important;
         }
         .fc-event-atendido {
-            background-color: #add8e6 !important; /* Azul claro */
-            color: #000 !important; /* Texto escuro para melhor contraste com azul claro */
+            background-color: #add8e6 !important; 
+            color: #000 !important;
             border-color: #add8e6 !important;
         }
         .fc-event-cancelado {
-            background-color: #dc3545 !important; /* Vermelho */
+            background-color: #dc3545 !important; 
             color: #fff !important;
             border-color: #dc3545 !important;
+        }
+        .fc-event-reservado {
+            background-color: #E0509B !important; 
+            color: #fff !important;
+            border-color: #E0509B !important;
         }
 
         /* Estilo para o cabeçalho do FullCalendar */
@@ -88,9 +93,66 @@
             font-weight: 600;
             padding: 5px;
         }
-        /* Assegurar que o rodapé não sobreponha o calendário */
         body {
-            padding-bottom: 100px; /* Ajuste conforme a altura do seu rodapé */
+            padding-bottom: 100px; 
+        }
+
+        /* Estilos para o botão de adicionar responsivo */
+        .btn-add-circle {
+            width: 45px; 
+            height: 45px;
+            border-radius: 50%; 
+            font-size: 1.5rem; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
+        }
+
+        /* Melhorias para telas pequenas */
+        @media (max-width: 767.98px) { 
+            .fc-toolbar-chunk {
+                display: flex;
+                flex-direction: column; 
+                align-items: center; 
+                margin-bottom: 0.9rem; 
+            }
+            .fc-toolbar-chunk:nth-child(1) { 
+                gap: 0.5rem; 
+            }
+            .fc-toolbar-chunk:nth-child(1) .fc-button-group {
+                display: flex;
+                gap: 0.5rem; 
+            }
+            .fc-toolbar-chunk:nth-child(2) {
+                margin-top: 1rem; 
+                margin-bottom: 1rem; 
+                margin-left: 1rem;
+            }
+            .fc-toolbar-chunk:nth-child(3) { 
+                display: flex;
+                gap: 0.5rem; 
+                flex-wrap: wrap; 
+                justify-content: center;
+            }
+        }
+        /* Ajustes para alinhar os botões de visualização e o título do mês/ano em telas maiores */
+        @media (min-width: 768px) { 
+            .fc-toolbar-chunk:nth-child(1) { 
+                display: flex;
+                align-items: center;
+                gap: 1rem; 
+            }
+            .fc-toolbar-chunk:nth-child(2) { 
+                margin-left: auto; 
+                margin-right: auto; 
+            }
+            .fc-toolbar-chunk:nth-child(3) { 
+                display: flex;
+                align-items: center;
+                gap: 0.5rem; 
+            }
         }
     </style>
 {% endblock %}
@@ -98,7 +160,14 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Agenda de Consultas</h2>
-    <a href="{% url 'agendar_consulta' %}" class="btn btn-success">Agendar Nova Consulta</a>
+    
+    {# Botão com texto para telas maiores (md e acima) #}
+    <a href="{% url 'agendar_consulta' %}" class="btn btn-success d-none d-md-block">Agendar Nova Consulta</a>
+    
+    {# Botão com ícone para telas menores (abaixo de md) #}
+    <a href="{% url 'agendar_consulta' %}" class="btn btn-success btn-add-circle d-block d-md-none">
+        +
+    </a>
 </div>
 
 <div class="card mb-4">
@@ -119,14 +188,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
             var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth', // Mantendo 'dayGridMonth' como inicial
+                initialView: 'dayGridMonth',
                 locale: 'pt-br',
                 slotDuration: '00:30:00',
                 slotLabelFormat: {
                     hour: 'numeric',
                     minute: '2-digit',
                     omitZeroMinute: false,
-                    meridiem: false // Formato 24h
+                    meridiem: false
                 },
                 headerToolbar: {
                     left: 'prev,next today',
@@ -148,11 +217,10 @@
                     }
                 },
                 dateClick: function(info) {
-                    // Declarar as variáveis com 'var'
-                    var clickedDate = info.dateStr.split('T')[0]; // Pega apenas a parte da data YYYY-MM-DD
+                    var clickedDate = info.dateStr.split('T')[0];
                     var clickedTime = '';
                     if (info.dateStr.includes('T')) {
-                        clickedTime = info.dateStr.split('T')[1].substring(0, 5); // HH:mm
+                        clickedTime = info.dateStr.split('T')[1].substring(0, 5);
                     }
                     
                     var url = "{% url 'agendar_consulta' %}";
@@ -163,7 +231,6 @@
                     window.location.href = url;
                 },
                 eventDidMount: function(info) {
-                    // Declarar as variáveis com 'var'
                     var procedimento = info.event.extendedProps.procedimento || 'Não especificado';
                     var pacienteNome = info.event.extendedProps.paciente_nome;
                     var clinicaNome = info.event.extendedProps.clinica_nome;
@@ -171,35 +238,34 @@
                     var valor = info.event.extendedProps.valor;
                     var statusPagamento = info.event.extendedProps.pago;
 
-                    var tooltipText = `<b>Procedimento:</b> ${procedimento}<br>` +   
-                                       `<b>Paciente:</b> ${pacienteNome}<br>`;
-                                      
-                        
+                    var tooltipText =   `<b>Paciente:</b> ${pacienteNome}<br>` +
+                                        `<b>Clínica:</b> ${clinicaNome}<br>` +
+                                        `<b>Procedimento:</b> ${procedimento}<br>`;
+                                       
 
-                    // Usando Tippy.js para tooltips mais ricos
-                    if (typeof tippy !== 'undefined') { // Verifica se tippy está carregado
+                    if (typeof tippy !== 'undefined') {
                         tippy(info.el, {
                             content: tooltipText,
-                            allowHTML: true, // Permite HTML no tooltip
-                            placement: 'top', // Posição do tooltip
-                            theme: 'light-border', // Um tema padrão, pode personalizar
-                            interactive: true, // Permite interagir com o conteúdo do tooltip
+                            allowHTML: true,
+                            placement: 'top',
+                            theme: 'light-border',
+                            interactive: true,
                         });
                     } else {
-                        console.warn("Tippy.js não está definido. Verifique se o script foi carregado corretamente.");
-                        // Fallback para o tooltip padrão do navegador se o Tippy não carregar
+                        console.warn("Tippy.js não está definido.");
                         info.el.setAttribute('title', tooltipText.replace(/<br>/g, '\n'));
                     }
 
-                    // Adiciona classes para estilização de eventos com base no status da consulta
-                    info.el.classList.remove('fc-event-agendado', 'fc-event-confirmado', 'fc-event-atendido', 'fc-event-cancelado');
+                    info.el.classList.remove('fc-event-agendado', 'fc-event-confirmado', 'fc-event-atendido', 'fc-event-cancelado', 'fc-event-reservado');
                     if (statusConsulta === 'Atendido') {
                         info.el.classList.add('fc-event-atendido');
                     } else if (statusConsulta === 'Cancelado' || statusConsulta === 'Não Compareceu') {
                         info.el.classList.add('fc-event-cancelado');
                     } else if (statusConsulta === 'Confirmado') {
                         info.el.classList.add('fc-event-confirmado');
-                    } else { // Por padrão (Agendado ou outros)
+                    } else if (statusConsulta === 'Reservado') {
+                        info.el.classList.add('fc-event-reservado');
+                    } else {
                         info.el.classList.add('fc-event-agendado');
                     }
                 },
@@ -214,17 +280,3 @@
         });
     </script>
 {% endblock %}
-```
-
-**Principais Correções:**
-
-* **Declaração de Variáveis:** Adicionei a palavra-chave `var` (ou `let`/`const`) antes das variáveis `tooltipText`, `procedimento`, `pacienteNome`, `clinicaNome`, `statusConsulta`, `valor`, `statusPagamento`, `clickedDate`, `clickedTime` para garantir que elas sejam declaradas corretamente dentro de seus escopos. A falta dessa declaração é a causa dos `ReferenceError`.
-
-**O que fazer agora:**
-
-1.  **Substitua o conteúdo do seu `core/templates/core/agenda.html`** pelo código acima.
-2.  **Salve o arquivo.**
-3.  **Reinicie o servidor Django** (`python manage.py runserver`).
-4.  **Limpe o cache do seu navegador** (`Ctrl+Shift+R` ou `Cmd+Shift+R`) e acesse a página da agenda.
-
-Isso deve resolver os `ReferenceError` no console, permitindo que o JavaScript do FullCalendar seja executado completamente. Consequentemente, os botões de visualização ("Mês", "Semana", "Dia") devem começar a funcionar, os eventos devem aparecer e os tooltips devem ser exibidos corretamen
