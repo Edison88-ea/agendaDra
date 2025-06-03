@@ -1,5 +1,3 @@
-# agenda_dentista/settings.py
-
 from pathlib import Path
 import os
 
@@ -10,46 +8,33 @@ except ImportError:
     pass 
 
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 if not SECRET_KEY:
-   
     if os.environ.get('GAE_APPLICATION') or os.environ.get('PYTHONANYWHERE_DOMAIN'):
         raise Exception('SECRET_KEY must be set in production environment variables!')
     else:
-       
-        SECRET_KEY = 'django-insecure-sua-chave-secreta-de-desenvolvimento-aqui-troque-por-uma-real-no-env' 
+        SECRET_KEY = '_zhm+iw-psshyakjos-@t8)=63ow#qjxk&67x*dxv2=h!*vsy0'
         print("AVISO: Usando SECRET_KEY de desenvolvimento. Defina DJANGO_SECRET_KEY em variáveis de ambiente para produção.")
 
 
 # SEGURANÇA CRÍTICA: DEBUG
-
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True' 
-
-# SEGURANÇA CRÍTICA: ALLOWED_HOSTS
-
-ALLOWED_HOSTS = [] # Sempre começa vazia
+# Lista de hosts/domínios pelos quais seu Django pode servir requisições.
+ALLOWED_HOSTS = [] 
 
 if DEBUG:
-   
     ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
-   
 else:
-    
+ 
     pythonanywhere_domain = os.environ.get('PYTHONANYWHERE_DOMAIN')
     if pythonanywhere_domain:
         ALLOWED_HOSTS.append(pythonanywhere_domain)
-    
     if 'Edison88.pythonanywhere.com' not in ALLOWED_HOSTS: 
         ALLOWED_HOSTS.append('Edison88.pythonanywhere.com')
-
     if not ALLOWED_HOSTS:
         raise Exception('ALLOWED_HOSTS must be set in production (e.g., in PythonAnywhere Web tab environment variables) or explicitly in settings.py!')
 
@@ -65,7 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crispy_forms',
     'crispy_bootstrap5',
-    'core', # Seu app principal
+    'core', 
 ]
 
 
@@ -80,6 +65,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'agenda_dentista.urls'
+LOGIN_REDIRECT_URL = 'agenda' 
+LOGIN_URL = 'login'           
 
 TEMPLATES = [
     {
@@ -112,14 +99,14 @@ DATABASES = {
 
 # Configuração para Produção (irá substituir a do SQLite quando DEBUG=False)
 if not DEBUG:
-    
-    DB_ENGINE = os.environ.get('DB_ENGINE', 'django.db.backends.mysql') #
+    DB_ENGINE = os.environ.get('DB_ENGINE', 'django.db.backends.mysql') 
     DB_NAME = os.environ.get('DB_NAME')
     DB_USER = os.environ.get('DB_USER')
     DB_PASSWORD = os.environ.get('DB_PASSWORD')
     DB_HOST = os.environ.get('DB_HOST') 
     DB_PORT = os.environ.get('DB_PORT', '') 
-    if all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST]): 
+
+    if all([DB_NAME, DB_USER, DB_PASSWORD, DB_HOST]):
         DATABASES['default'] = {
             'ENGINE': DB_ENGINE,
             'NAME': DB_NAME,
@@ -154,7 +141,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'pt-br' 
+LANGUAGE_CODE = 'pt-br' # Definido pt-br como você queria
 
 TIME_ZONE = 'America/Sao_Paulo'
 

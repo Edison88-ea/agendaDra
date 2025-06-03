@@ -1,9 +1,10 @@
 from django import forms
-from .models import Consulta, Paciente 
+from .models import Consulta, ExameConsultaArquivo, TermoConsultaArquivo, Paciente, ExamePacienteArquivo, TermoPacienteArquivo
 
 # Campo de formulário customizado para múltiplos arquivos (já existente)
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
+    template_name = 'core/widgets/multiple_file_input.html'
 
 class MultipleFileField(forms.FileField):
     def __init__(self, *args, **kwargs):
@@ -24,13 +25,22 @@ class ConsultaForm(forms.ModelForm):
 
     class Meta:
         model = Consulta
-        fields = ['paciente', 'clinica', 'data_consulta', 'hora_inicio', 'hora_fim', 'procedimento', 'valor', 'pago', 'status', 'observacoes']
+        # NOVO ORDENAMENTO: 'clinica' antes de 'paciente'
+        fields = ['clinica', 'paciente', 'data_consulta', 'hora_inicio', 'hora_fim', 'procedimento', 'valor', 'pago', 'status', 'observacoes']
         widgets = {
             'data_consulta': forms.DateInput(attrs={'type': 'date'}),
             'hora_inicio': forms.TimeInput(attrs={'type': 'time'}),
             'hora_fim': forms.TimeInput(attrs={'type': 'time'}),
             'observacoes': forms.Textarea(attrs={'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Inicialmente, o campo paciente pode estar vazio ou com todos os pacientes.
+        # A filtragem real será feita via JavaScript.
+        # Se você quiser que comece vazio, pode fazer:
+        # self.fields['paciente'].queryset = Paciente.objects.none()
+        # Mas para a lógica de filtro dinâmico, geralmente deixamos como está ou com todos os pacientes.
 
     def clean(self):
         cleaned_data = super().clean()
@@ -76,7 +86,7 @@ class ConsultaForm(forms.ModelForm):
         
         return cleaned_data
 
-# Formulário para o modelo Paciente
+# Formulário para o modelo Paciente (mantido como está, sem alterações para esta tarefa)
 class PacienteForm(forms.ModelForm):
     exames_upload_paciente = MultipleFileField(label="Carregar Exames do Paciente (multiplos)", required=False)
     termos_upload_paciente = MultipleFileField(label="Carregar Termos do Paciente (multiplos)", required=False)
@@ -86,5 +96,5 @@ class PacienteForm(forms.ModelForm):
         fields = ['nome', 'telefone', 'email', 'data_nascimento', 'cpf', 'clinica_principal', 'observacoes']
         widgets = {
             'data_nascimento': forms.DateInput(attrs={'type': 'date'}),
-            'observacoes': forms.Textarea(attrs={'rows': 3}), 
+            'observacoes': forms.Textarea(attrs={'rows': 3}),
         }

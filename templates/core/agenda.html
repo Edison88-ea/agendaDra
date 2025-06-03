@@ -179,7 +179,7 @@
 
 {% block extra_js %}
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core/locales/pt-br.global.min.js'></script> {# Tradução para Português #}
+    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core/locales/pt-br.global.min.js'></script>
 
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
@@ -203,7 +203,7 @@
                     right: 'dayGridMonth,timeGridWeek,timeGridDay'
                 },
                 slotMinTime: '08:00:00',
-                slotMaxTime: '18:00:00',
+                slotMaxTime: '20:00:00',
                 events: {
                     url: '{% url "api_consultas_json" %}',
                     failure: function() {

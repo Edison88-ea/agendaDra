@@ -484,3 +484,13 @@ def get_consultas_json(request):
     
     print(f"Total de eventos retornados: {len(events)}")
     return JsonResponse(events, safe=False)
+# NOVO: View para retornar pacientes filtrados por clínica (para AJAX)
+def get_pacientes_por_clinica(request):
+    clinica_id = request.GET.get('clinica_id')
+    pacientes = []
+    if clinica_id:
+        # Filtra pacientes que têm a clínica_principal associada
+        pacientes_qs = Paciente.objects.filter(clinica_principal__id=clinica_id).order_by('nome')
+        for paciente in pacientes_qs:
+            pacientes.append({'id': paciente.id, 'nome': paciente.nome})
+    return JsonResponse(pacientes, safe=False)

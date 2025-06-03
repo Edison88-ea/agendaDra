@@ -1,0 +1,25 @@
+{% extends 'core/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header text-center card-header-pink-darker">
+                <h3>Login</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <button type="submit" class="btn btn-primary w-100 mt-3">Entrar</button>
+                    {# Link para redefinir senha (se você implementar) #}
+                    {# <p class="text-center mt-3"><a href="{% url 'password_reset' %}">Esqueceu sua senha?</a></p> #}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

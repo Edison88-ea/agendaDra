@@ -1,7 +1,33 @@
 {% extends 'core/base.html' %}
 {% load crispy_forms_tags %}
+{% load static %}
 
 {% block title %}{% if form.instance.pk %}Editar Consulta{% else %}Agendar Nova Consulta{% endif %}{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Estilos para miniaturas de arquivos (se não estiverem já em base.html) */
+    .file-preview-thumbnail {
+        max-width: 50px;
+        max-height: 50px;
+        border: 1px solid #ddd;
+        padding: 2px;
+        border-radius: 4px;
+        margin-right: 10px;
+        object-fit: contain;
+    }
+    .file-item-content {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    .list-group-item .file-item-content a {
+        word-break: break-all;
+        overflow-wrap: break-word;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="card">
@@ -9,12 +35,12 @@
         <h2>{% if form.instance.pk %}Editar Consulta{% else %}Agendar Nova Consulta{% endif %}</h2>
     </div>
     <div class="card-body">
-        <form method="post" enctype="multipart/form-data"> {# Mantenha enctype para uploads de arquivo #}
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             
-            {# Renderiza os campos do formulário principal com estilo Crispy Forms #}
+            {# Renderiza os campos do formulário principal da Consulta com estilo Crispy Forms #}
+            {# A ordem dos campos 'clinica' e 'paciente' é definida no forms.py #}
             {{ form|crispy }}
-
 
             {# Exibir arquivos existentes (apenas se for edição de consulta) #}
             {% if form.instance.pk %}
@@ -97,19 +123,59 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Função para atualizar a lista de arquivos selecionados
-        function updateFileList(inputElement, outputDivId) {
+        const clinicaSelect = document.getElementById('id_clinica');
+        const pacienteSelect = document.getElementById('id_paciente');
+        const initialPacienteId = pacienteSelect.value; // Guarda o ID do paciente inicial (para edição)
+
+        function updatePacientes() {
+            const clinicaId = clinicaSelect.value;
+            pacienteSelect.innerHTML = '<option value="">---------</option>'; // Limpa e adiciona opção padrão
+
+            if (clinicaId) {
+                fetch(`{% url 'get_pacientes_por_clinica_json' %}?clinica_id=${clinicaId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        data.forEach(paciente => {
+                            const option = document.createElement('option');
+                            option.value = paciente.id;
+                            option.textContent = paciente.nome;
+                            pacienteSelect.appendChild(option);
+                        });
+                        // Se estiver em modo de edição e o paciente inicial pertencer à clínica, selecione-o
+                        if (initialPacienteId && data.some(p => p.id == initialPacienteId)) {
+                            pacienteSelect.value = initialPacienteId;
+                        }
+                    })
+                    .catch(error => console.error('Erro ao buscar pacientes:', error));
+            } else {
+                // Se nenhuma clínica for selecionada, o campo paciente permanece com a opção padrão
+            }
+        }
+
+        // Adiciona event listener para quando a clínica mudar
+        clinicaSelect.addEventListener('change', updatePacientes);
+
+        // Dispara a atualização inicial dos pacientes se uma clínica já estiver selecionada (útil para edição)
+        if (clinicaSelect.value) {
+            updatePacientes();
+        }
+
+        // Função para atualizar a lista de arquivos selecionados (para uploads dinâmicos)
+        function updateFileList(inputElement, outputDivId, filesArray) {
             const outputDiv = document.getElementById(outputDivId);
-            outputDiv.innerHTML = '';
-            if (inputElement.files.length > 0) {
+            outputDiv.innerHTML = ''; // Limpa a lista anterior
+            const filesToDisplay = filesArray || Array.from(inputElement.files);
+
+            if (filesToDisplay.length > 0) {
                 const ul = document.createElement('ul');
                 ul.classList.add('list-unstyled', 'mb-0');
-                for (let i = 0; i < inputElement.files.length; i++) {
-                    const file = inputElement.files[i];
+                filesToDisplay.forEach(file => {
                     const li = document.createElement('li');
-                    li.textContent = `• ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                    const fileName = file.name || (file.arquivo && file.arquivo.name ? file.arquivo.name.split('/').pop() : 'N/A');
+                    const fileSize = file.size || (file.arquivo && file.arquivo.size ? file.arquivo.size : 0);
+                    li.textContent = `• ${fileName} (${(file.size / 1024).toFixed(2)} KB)`;
                     ul.appendChild(li);
-                }
+                });
                 outputDiv.appendChild(ul);
             } else {
                 outputDiv.textContent = 'Nenhum arquivo escolhido.';
@@ -124,7 +190,6 @@
             examesUploadInput.addEventListener('change', function() {
                 updateFileList(this, 'exames-upload-list');
             });
-            // Inicializa a lista com arquivos que foram submetidos e retornados pelo servidor
             const submittedExames = JSON.parse(document.getElementById('submitted_exames_files_json').textContent || '[]');
             if (submittedExames && submittedExames.length > 0) {
                 updateFileList(examesUploadInput, 'exames-upload-list', submittedExames);
@@ -135,7 +200,6 @@
             termosUploadInput.addEventListener('change', function() {
                 updateFileList(this, 'termos-upload-list');
             });
-            // Inicializa a lista com arquivos que foram submetidos e retornados pelo servidor
             const submittedTermos = JSON.parse(document.getElementById('submitted_termos_files_json').textContent || '[]');
             if (submittedTermos && submittedTermos.length > 0) {
                 updateFileList(termosUploadInput, 'termos-upload-list', submittedTermos);
