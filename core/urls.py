@@ -2,13 +2,12 @@ from django.urls import path
 from .views import (
     AgendaView, AgendarConsultaCreateView, ConsultaUpdateView, ConsultaDeleteView,
     PacienteListView, PacienteCreateView, PacienteUpdateView, PacienteDeleteView,
-    ClinicaListView, ClinicaCreateView, ClinicaUpdateView, ClinicaDeleteView,
-    get_consultas_json,
-    relatorio_financeiro,
+    ClinicaListView, ClinicaCreateView, ClinicaUpdateView, ClinicaDeleteView, RelatorioFinanceiroView, 
     ExcluirExameConsultaArquivoView,
     ExcluirTermoConsultaArquivoView,
     ExcluirExamePacienteArquivoView,
     ExcluirTermoPacienteArquivoView,
+    get_consultas_json,
     get_pacientes_por_clinica, # NOVO: Importar a nova view para AJAX
 )
 
@@ -40,7 +39,7 @@ urlpatterns = [
     path('clinicas/<int:pk>/excluir/', ClinicaDeleteView.as_view(), name='excluir_clinica'),
 
     path('api/consultas/', get_consultas_json, name='api_consultas_json'),
-    path('relatorio/financeiro/', relatorio_financeiro, name='relatorio_financeiro'),
+    path('relatorio/financeiro/', RelatorioFinanceiroView.as_view(), name='relatorio_financeiro'),
 
     # NOVO: URL para a view AJAX de filtragem de pacientes
     path('get_pacientes_por_clinica/', get_pacientes_por_clinica, name='get_pacientes_por_clinica_json'),

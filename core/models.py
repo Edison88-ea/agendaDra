@@ -14,6 +14,11 @@ class Paciente(models.Model):
     observacoes = models.TextField("Observações", blank=True, null=True)
     clinica_principal = models.ForeignKey('Clinica', on_delete=models.SET_NULL, blank=True, null=True, verbose_name="Clínica Principal")
 
+    class Meta:
+        permissions = [
+            ("can_add_paciente_files", "Can add patient files (exams and terms)"),
+        ]
+
     def __str__(self):
         return self.nome
 
@@ -103,6 +108,10 @@ class Consulta(models.Model):
 
     class Meta:
         ordering = ['data_consulta', 'hora_inicio']
+        permissions = [
+            ("can_add_consulta_files", "Can add consultation files (exams and terms)"),
+            ("view_relatorio_financeiro", "Can view financial report"),
+        ]
 
     def __str__(self):
         return f"Consulta de {self.paciente.nome if self.paciente else 'Horário Reservado'} em {self.data_consulta.strftime('%d/%m/%Y')} às {self.hora_inicio.strftime('%H:%M')}"

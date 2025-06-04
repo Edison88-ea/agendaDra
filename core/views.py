@@ -1,5 +1,5 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.shortcuts import redirect
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django.utils import timezone
 from datetime import datetime, timedelta, date
@@ -9,6 +9,7 @@ from django.http import JsonResponse
 from django.conf import settings
 from django.db.models import Sum, Q
 from django.forms import inlineformset_factory
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 
 # FormSets para Paciente
 TermoPacienteArquivoFormSet = inlineformset_factory(
@@ -87,11 +88,12 @@ class AgendaView(ListView):
         
         return context
 
-class AgendarConsultaCreateView(CreateView):
+class AgendarConsultaCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Consulta
     form_class = ConsultaForm
     template_name = 'core/agendar_consulta_form.html'
     success_url = reverse_lazy('agenda')
+    permission_required = ('core.add_consulta', 'core.can_add_consulta_files')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -141,11 +143,12 @@ class AgendarConsultaCreateView(CreateView):
         return self.render_to_response(context)
 
 
-class ConsultaUpdateView(UpdateView):
+class ConsultaUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Consulta
     form_class = ConsultaForm
     template_name = 'core/agendar_consulta_form.html'
     success_url = reverse_lazy('agenda')
+    permission_required = 'core.change_consulta'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -174,49 +177,57 @@ class ConsultaUpdateView(UpdateView):
         context = self.get_context_data(form=form) # Já chama get_context_data que passa os submitted_files
         return self.render_to_response(context)
 
-class ConsultaDeleteView(DeleteView):
+class ConsultaDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Consulta
     template_name = 'core/consulta_confirm_delete.html'
     success_url = reverse_lazy('agenda')
+    permission_required = 'core.delete_consulta'
 
-class PacienteDeleteView(DeleteView):
+class PacienteDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Paciente
     template_name = 'core/paciente_confirm_delete.html'
     success_url = reverse_lazy('paciente_list')
+    permission_required = 'core.delete_paciente'
 
-class ExcluirExameConsultaArquivoView(DeleteView):
+
+class ExcluirExameConsultaArquivoView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = ExameConsultaArquivo
     template_name = 'core/confirm_delete_arquivo.html'
+    permission_required = 'core.delete_exameconsulta_arquivo'
     
     def get_success_url(self):
         return reverse_lazy('editar_consulta', kwargs={'pk': self.object.consulta.pk})
 
-class ExcluirTermoConsultaArquivoView(DeleteView):
+class ExcluirTermoConsultaArquivoView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = TermoConsultaArquivo
     template_name = 'core/confirm_delete_arquivo.html'
+    permission_required = 'core.delete_termoconsulta_arquivo'
     
     def get_success_url(self):
         return reverse_lazy('editar_consulta', kwargs={'pk': self.object.consulta.pk})
 
-class ExcluirExamePacienteArquivoView(DeleteView):
+class ExcluirExamePacienteArquivoView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = ExamePacienteArquivo
     template_name = 'core/paciente_delete_arquivo.html'
+    permission_required = 'core.delete_examepaciente_arquivo'
     
     def get_success_url(self):
         return reverse_lazy('editar_paciente', kwargs={'pk': self.object.paciente.pk})
 
-class ExcluirTermoPacienteArquivoView(DeleteView):
+class ExcluirTermoPacienteArquivoView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = TermoPacienteArquivo
     template_name = 'core/paciente_delete_arquivo.html'
+    permission_required = 'core.delete_termopaciente_arquivo'
     
     def get_success_url(self):
         return reverse_lazy('editar_paciente', kwargs={'pk': self.object.paciente.pk})
 
-class PacienteListView(ListView):
+class PacienteListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Paciente
     template_name = 'core/paciente_list.html'
     context_object_name = 'pacientes'
     paginate_by = 10
+    permission_required = 'core.change_paciente'
 
     def get_queryset(self):
         queryset = super().get_queryset().order_by('nome')
@@ -234,11 +245,12 @@ class PacienteListView(ListView):
         context['submitted_termos_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('termos_upload_paciente')] if self.request.POST else []
         return context
 
-class PacienteCreateView(CreateView):
+class PacienteCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     model = Paciente
     form_class = PacienteForm
     template_name = 'core/paciente_form.html'
     success_url = reverse_lazy('paciente_list')
+    permission_required = ('core.add_paciente', 'core.can_add_paciente_files')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -269,11 +281,12 @@ class PacienteCreateView(CreateView):
         context['submitted_termos_paciente_files'] = [{'name': f.name, 'size': f.size} for f in self.request.FILES.getlist('termos_upload_paciente')]
         return self.render_to_response(context)
 
-class PacienteUpdateView(UpdateView):
+class PacienteUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Paciente
     form_class = PacienteForm # Usar o novo PacienteForm
     template_name = 'core/paciente_form.html'
     success_url = reverse_lazy('paciente_list')
+    permission_required = 'core.change_paciente'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -322,82 +335,90 @@ class ClinicaListView(ListView):
         context['query'] = self.request.GET.get('q', '')
         return context
 
-class ClinicaCreateView(CreateView):
+class ClinicaCreateView(LoginRequiredMixin, CreateView):
     model = Clinica
     fields = ['nome', 'endereco', 'telefone']
     template_name = 'core/clinica_form.html'
     success_url = reverse_lazy('clinica_list')
 
-class ClinicaUpdateView(UpdateView):
+class ClinicaUpdateView(LoginRequiredMixin, UpdateView):
     model = Clinica
     fields = ['nome', 'endereco', 'telefone']
     template_name = 'core/clinica_form.html'
     success_url = reverse_lazy('clinica_list')
-class ClinicaDeleteView(DeleteView):
+class ClinicaDeleteView(LoginRequiredMixin, DeleteView):
     model = Clinica
     template_name = 'core/clinica_confirm_delete.html'
     success_url = reverse_lazy('clinica_list')    
 
-def relatorio_financeiro(request):
-    data_inicio_str = request.GET.get('data_inicio')
-    data_fim_str = request.GET.get('data_fim')
-    clinica_id = request.GET.get('clinica')
+class RelatorioFinanceiroView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView): 
+    template_name = 'core/relatorio_financeiro.html'
+    login_url = '/accounts/login/' 
+    permission_required = 'core.view_relatorio_financeiro'
 
-    consultas_pagas_periodo = Consulta.objects.filter(pago=True)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        request = self.request 
 
-    if data_inicio_str:
-        try:
-            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
-            consultas_pagas_periodo = consultas_pagas_periodo.filter(data_consulta__gte=data_inicio)
-        except ValueError:
-            pass
-    if data_fim_str:
-        try:
-            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
-            consultas_pagas_periodo = consultas_pagas_periodo.filter(data_consulta__lte=data_fim)
-        except ValueError:
-            pass
-    
-    total_geral_arrecadado = consultas_pagas_periodo.aggregate(total=Sum('valor'))['total'] or 0.00
+        data_inicio_str = request.GET.get('data_inicio')
+        data_fim_str = request.GET.get('data_fim')
+        clinica_id = request.GET.get('clinica')
 
-    relatorios_por_clinica = {}
-    
-    todas_clinicas = Clinica.objects.all().order_by('nome')
+        consultas_pagas_periodo = Consulta.objects.filter(pago=True)
 
-    if clinica_id:
-        consultas_pagas_periodo = consultas_pagas_periodo.filter(clinica_id=clinica_id)
+        if data_inicio_str:
+            try:
+                data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+                consultas_pagas_periodo = consultas_pagas_periodo.filter(data_consulta__gte=data_inicio)
+            except ValueError:
+                pass
+        if data_fim_str:
+            try:
+                data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+                consultas_pagas_periodo = consultas_pagas_periodo.filter(data_consulta__lte=data_fim)
+            except ValueError:
+                pass
         
-        clinica_selecionada_obj = todas_clinicas.filter(pk=clinica_id).first()
-        if clinica_selecionada_obj:
-            consultas_da_clinica = consultas_pagas_periodo.filter(clinica=clinica_selecionada_obj).order_by('-data_consulta', '-hora_inicio')
-            total_arrecadado_clinica = consultas_da_clinica.aggregate(total=Sum('valor'))['total'] or 0.00
-            if consultas_da_clinica.exists():
-                relatorios_por_clinica[clinica_selecionada_obj.nome] = {
-                    'clinica_obj': clinica_selecionada_obj,
-                    'consultas': consultas_da_clinica,
-                    'total_arrecadado': total_arrecadado_clinica,
-                }
-    else:
-        for clinica in todas_clinicas:
-            consultas_da_clinica = consultas_pagas_periodo.filter(clinica=clinica).order_by('-data_consulta', '-hora_inicio')
-            total_arrecadado_clinica = consultas_da_clinica.aggregate(total=Sum('valor'))['total'] or 0.00
-            
-            if consultas_da_clinica.exists():
-                relatorios_por_clinica[clinica.nome] = {
-                    'clinica_obj': clinica,
-                    'consultas': consultas_da_clinica,
-                    'total_arrecadado': total_arrecadado_clinica,
-                }
+        total_geral_arrecadado = consultas_pagas_periodo.aggregate(total=Sum('valor'))['total'] or 0.00
 
-    context = {
-        'relatorios_por_clinica': relatorios_por_clinica,
-        'todas_clinicas': todas_clinicas,
-        'data_inicio': data_inicio_str,
-        'data_fim': data_fim_str,
-        'clinica_selecionada_id': int(clinica_id) if clinica_id else '',
-        'total_geral_arrecadado': total_geral_arrecadado,
-    }
-    return render(request, 'core/relatorio_financeiro.html', context)
+        relatorios_por_clinica = {}
+        
+        todas_clinicas = Clinica.objects.all().order_by('nome')
+
+        if clinica_id:
+            consultas_pagas_periodo = consultas_pagas_periodo.filter(clinica_id=clinica_id)
+            
+            clinica_selecionada_obj = todas_clinicas.filter(pk=clinica_id).first()
+            if clinica_selecionada_obj:
+                consultas_da_clinica = consultas_pagas_periodo.filter(clinica=clinica_selecionada_obj).order_by('-data_consulta', '-hora_inicio')
+                total_arrecadado_clinica = consultas_da_clinica.aggregate(total=Sum('valor'))['total'] or 0.00
+                if consultas_da_clinica.exists():
+                    relatorios_por_clinica[clinica_selecionada_obj.nome] = {
+                        'clinica_obj': clinica_selecionada_obj,
+                        'consultas': consultas_da_clinica,
+                        'total_arrecadado': total_arrecadado_clinica,
+                    }
+            else:
+                for clinica in todas_clinicas:
+                    consultas_da_clinica = consultas_pagas_periodo.filter(clinica=clinica).order_by('-data_consulta', '-hora_inicio')
+                    total_arrecadado_clinica = consultas_da_clinica.aggregate(total=Sum('valor'))['total'] or 0.00
+                    
+                    if consultas_da_clinica.exists():
+                        relatorios_por_clinica[clinica.nome] = {
+                            'clinica_obj': clinica,
+                            'consultas': consultas_da_clinica,
+                            'total_arrecadado': total_arrecadado_clinica,
+                        }
+
+        context.update({ 
+            'relatorios_por_clinica': relatorios_por_clinica,
+            'todas_clinicas': todas_clinicas,
+            'data_inicio': data_inicio_str,
+            'data_fim': data_fim_str,
+            'clinica_selecionada_id': int(clinica_id) if clinica_id else '',
+            'total_geral_arrecadado': total_geral_arrecadado,
+        })
+        return context
 
 def get_consultas_json(request):
     start_str = request.GET.get('start')
